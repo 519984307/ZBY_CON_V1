@@ -1,0 +1,12 @@
+﻿  Generate moc_predefs.h
+  Moc'ing log.h...
+  Moc'ing logcontroller.h...
+  log.cpp
+  logcontroller.cpp
+c:\users\cc\documents\qt\container_multiple_channels_20200522\container_multiple_channels_20200522\logcontroller\logcontroller.h : warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失 (编译源文件 logcontroller.cpp)
+  moc_log.cpp
+  moc_logcontroller.cpp
+c:\users\cc\documents\qt\container_multiple_channels_20200522\container_multiple_channels_20200522\logcontroller\debug\../logcontroller.h : warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失 (编译源文件 Debug\moc_logcontroller.cpp)
+    正在创建库 debug\\Cc1_Loggingd.lib 和对象 debug\\Cc1_Loggingd.exp
+  Cc1_Logging.vcxproj -> C:\Users\cc\Documents\Qt\Container_Multiple_Channels_20200522\Container_Multiple_Channels_20200522\LogController\debug\Cc1_Loggingd.dll
+  Cc1_Logging.vcxproj -> debug\Cc1_Loggingd.pdb (Full PDB)
