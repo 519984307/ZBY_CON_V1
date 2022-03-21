@@ -418,9 +418,15 @@ void Identify::slotDetectImage(const QString &image)
 
         QString container="";
         for(int i=0;i<ConS.size();i++){
-            if((ConS.at(i)>='0' && ConS.at(i)<='9') || (ConS.at(i)>='A' && ConS.at(i)<='Z')){
+            if(i<4 && ConS.at(i)>='A' && ConS.at(i)<='Z'){
                 container.append(ConS.at(i));
             }
+            if(i>=4 && ConS.at(i)>='0' && ConS.at(i)<='9'){
+                container.append(ConS.at(i));
+            }
+//            if((ConS.at(i)>='0' && ConS.at(i)<='9') || (ConS.at(i)>='A' && ConS.at(i)<='Z')){
+//                container.append(ConS.at(i));
+//            }
         }
 
         uint64_t source=4000000;
@@ -429,7 +435,7 @@ void Identify::slotDetectImage(const QString &image)
         }
 
         uint64_t sourceC=11000000;
-        if(container.size()>11 || container.size()<10){
+        if(container.size()>=12 || container.size()<=9){
             sourceC=CON_source*10000000;
         }
 
