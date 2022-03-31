@@ -73,6 +73,12 @@ signals:
     /// \param image
     ///
     void detectImageSignal(const QString& image);
+
+    ///
+    /// \brief setDectModelSignal 设置
+    /// \param model
+    ///
+    void setDectModelSignal(int model);
 };
 
 #endif // TCPSERVER_H

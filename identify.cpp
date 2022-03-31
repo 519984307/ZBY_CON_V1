@@ -32,6 +32,8 @@ Identify::Identify(QObject *parent, const QString &infer_cls, const QString &inf
     parameter.DoAngle = true;
     parameter.MostAngle = true;
 
+    model=1;
+
     //方向分类器相关
     parameter.use_angle_cls = false;
     parameter.cls_thresh = 0.9f;
@@ -179,135 +181,119 @@ void Identify::initCheckMap()
 void Identify::slotDetectImage(const QString &image)
 {
     //DecIMG(image,pEngine);
-    QFileInfo info(image);
-    if(info.isFile()){
+    if(model){
+        QFileInfo info(image);
+        if(info.isFile()){
 
-        OCRResult* ocrResult=new OCRResult() ;
-        int cout= Detect(pEngine, const_cast<char*>(image.toStdString().c_str()), &ocrResult);
+            OCRResult* ocrResult=new OCRResult() ;
+            int cout= Detect(pEngine, const_cast<char*>(image.toStdString().c_str()), &ocrResult);
 
-        if(cout==0){
-            emit signalDetectRst(image,"RESULT:||0|0");
+            if(cout==0){
+                emit signalDetectRst(image,"RESULT:||0|0");
 
+                /*****************************
+                * @brief:释放识别结果对象
+                ******************************/
+                FreeDetectResult(ocrResult);
+
+                return;
+            }
+
+            QString ConS="";
+            QString Iso="";
             /*****************************
-            * @brief:释放识别结果对象
+            * @brief:箱型原始数据
             ******************************/
-            FreeDetectResult(ocrResult);
+            QString Iso_="";
 
-            return;
-        }
+            double CON_source=0;
+            double ISO_source=0;
 
-        QString ConS="";
-        QString Iso="";
-        /*****************************
-        * @brief:箱型原始数据
-        ******************************/
-        QString Iso_="";
+            int sX1=-1;
+            int sY1=-1;
+            int sX2=-1;
+            int sY2=-1;
+            int sX3=-1;
+            int sY3=-1;
+            int sX4=-1;
+            int sY4=-1;
 
-        double CON_source=0;
-        double ISO_source=0;
+            bool con_number=false;
 
-        int sX1=-1;
-        int sY1=-1;
-        int sX2=-1;
-        int sY2=-1;
-        int sX3=-1;
-        int sY3=-1;
-        int sX4=-1;
-        int sY4=-1;
+            for (int ind = 0; ind < cout; ind++)
+            {
+                QString rst= QString::fromStdWString(reinterpret_cast<WCHAR*>(ocrResult->pOCRText[ind].ptext)).toUpper();
 
-        bool con_number=false;
+    //            QFile f("c:\\test.txt");
+    //            if(f.open(QIODevice::WriteOnly | QIODevice::Append))
+    //            {
+    //                QTextStream out(&f);
+    //                out<<"Identify:";
+    //                out<<rst;
+    //                out<<"-------------------\r";
+    //            }
+    //             f.close();
 
-        for (int ind = 0; ind < cout; ind++)
-        {
-            QString rst= QString::fromStdWString(reinterpret_cast<WCHAR*>(ocrResult->pOCRText[ind].ptext)).toUpper();
+                QString number="";
 
-//            QFile f("c:\\test.txt");
-//            if(f.open(QIODevice::WriteOnly | QIODevice::Append))
-//            {
-//                QTextStream out(&f);
-//                out<<"Identify:";
-//                out<<rst;
-//                out<<"-------------------\r";
-//            }
-//             f.close();
-
-            QString number="";
-
-            for(int i=0;i<rst.size();i++){
-                if((rst.at(i)>='0' && rst.at(i)<='9') || (rst.at(i)>='A' && rst.at(i)<='Z')){
-                    number.append(rst.at(i));
-                }
-            }
-
-            number.remove(QRegExp("\\s"));
-            number.remove(QRegExp("\\."));
-
-            if(number.size()>=4){
-                if(!CONMAP.value(number.mid(0,4),"").isEmpty()){
-                   number.replace(0,4,CONMAP.value(number.mid(0,4)));
-                }
-                else if(number.at(3)<='9' && !CONMAP.value(number.mid(0,3),"").isEmpty()){
-                   number.replace(0,3,CONMAP.value(number.mid(0,3)));
-                }
-            }
-            if(number.size()==3){
-                if(!CONMAP.value(number,"").isEmpty()){
-                   number.replace(0,3,CONMAP.value(number));
-                }
-            }
-
-            if(number.simplified().size()>=4 && CONDICT.indexOf(number.mid(0,4)) != -1 && _CONDICT.indexOf(number.mid(0,4))==-1){
-                if(ConS.isEmpty()){
-                    /*****************************
-                    * @brief:找到箱号字头
-                    ******************************/
-                    ConS.append(number);
-                    sX1=ocrResult->pOCRText[ind].points[0].x;
-                    sY1=ocrResult->pOCRText[ind].points[0].y;
-                    sX2=ocrResult->pOCRText[ind].points[1].x;
-                    sY2=ocrResult->pOCRText[ind].points[1].y;
-                    sX3=ocrResult->pOCRText[ind].points[2].x;
-                    sY3=ocrResult->pOCRText[ind].points[2].y;
-                    sX4=ocrResult->pOCRText[ind].points[3].x;
-                    sY4=ocrResult->pOCRText[ind].points[3].y;
-
-                    if(ConS.size()>=10){
-                        con_number=true;
+                for(int i=0;i<rst.size();i++){
+                    if((rst.at(i)>='0' && rst.at(i)<='9') || (rst.at(i)>='A' && rst.at(i)<='Z')){
+                        number.append(rst.at(i));
                     }
-                    /*****************************
-                    * @brief:置信度
-                    ******************************/
-                    CON_source=ocrResult->pOCRText[ind].score;
-                    //break;
                 }
-            }
 
-            /*****************************
-            * @brief:箱型
-            ******************************/
-            if((ISODICT.indexOf(number)!=-1 || !ISOMAP.value(number,"").isEmpty()) && Iso.isEmpty()){
-                if(!ISOMAP.value(number,"").isEmpty()){
-                    Iso=ISOMAP.value(number);
+                number.remove(QRegExp("\\s"));
+                number.remove(QRegExp("\\."));
+
+                if(number.size()>=4){
+                    if(!CONMAP.value(number.mid(0,4),"").isEmpty()){
+                       number.replace(0,4,CONMAP.value(number.mid(0,4)));
+                    }
+                    else if(number.at(3)<='9' && !CONMAP.value(number.mid(0,3),"").isEmpty()){
+                       number.replace(0,3,CONMAP.value(number.mid(0,3)));
+                    }
                 }
-                else {
-                    Iso=number;
+                if(number.size()==3){
+                    if(!CONMAP.value(number,"").isEmpty()){
+                       number.replace(0,3,CONMAP.value(number));
+                    }
                 }
-                if(!Iso.isEmpty()){
-                    Iso_=number;
-                    /*****************************
-                    * @brief:置信度
-                    ******************************/
-                    ISO_source=ocrResult->pOCRText[ind].score;
-                    //break;
+
+                if(number.simplified().size()>=4 && CONDICT.indexOf(number.mid(0,4)) != -1 && _CONDICT.indexOf(number.mid(0,4))==-1){
+                    if(ConS.isEmpty()){
+                        /*****************************
+                        * @brief:找到箱号字头
+                        ******************************/
+                        ConS.append(number);
+                        sX1=ocrResult->pOCRText[ind].points[0].x;
+                        sY1=ocrResult->pOCRText[ind].points[0].y;
+                        sX2=ocrResult->pOCRText[ind].points[1].x;
+                        sY2=ocrResult->pOCRText[ind].points[1].y;
+                        sX3=ocrResult->pOCRText[ind].points[2].x;
+                        sY3=ocrResult->pOCRText[ind].points[2].y;
+                        sX4=ocrResult->pOCRText[ind].points[3].x;
+                        sY4=ocrResult->pOCRText[ind].points[3].y;
+
+                        if(ConS.size()>=10){
+                            con_number=true;
+                        }
+                        /*****************************
+                        * @brief:置信度
+                        ******************************/
+                        CON_source=ocrResult->pOCRText[ind].score;
+                        //break;
+                    }
                 }
-            }
-            else if(number.size()>=4 && Iso.isEmpty() && !number.endsWith("S")){
-                if((ISODICT.indexOf(number.mid(0,4))!=-1 || !ISOMAP.value(number.mid(0,4),"").isEmpty())){
-                    if(!ISOMAP.value(number.mid(0,4),"").isEmpty() ){
-                        Iso=ISOMAP.value(number.mid(0,4));
+
+                /*****************************
+                * @brief:箱型
+                ******************************/
+                if((ISODICT.indexOf(number)!=-1 || !ISOMAP.value(number,"").isEmpty()) && Iso.isEmpty()){
+                    if(!ISOMAP.value(number,"").isEmpty()){
+                        Iso=ISOMAP.value(number);
                     }
                     else {
-                        Iso=number.mid(0,4);
+                        Iso=number;
                     }
                     if(!Iso.isEmpty()){
                         Iso_=number;
@@ -318,82 +304,37 @@ void Identify::slotDetectImage(const QString &image)
                         //break;
                     }
                 }
-            }
-        }
-
-
-        if(!ConS.isEmpty() && !con_number){
-            for (int ind = 0; ind < cout; ind++)
-            {
-                if((ocrResult->pOCRText[ind].points[3].y-ocrResult->pOCRText[ind].points[0].y)<(sY4-sY1)/2){
-                    continue;
-                }
-
-                /*****************************
-                * @brief:水平箱号，（单行）
-                * WDFU 123456 7
-                ******************************/
-                QString number= QString::fromStdWString(reinterpret_cast<WCHAR*>(ocrResult->pOCRText[ind].ptext));
-                if(number==Iso_){
-                    continue;
-                }
-
-                if(ConS != number){
-                    if(qAbs(sX2-ocrResult->pOCRText[ind].points[0].x)<(sX2-sX1) && qAbs(sY2-ocrResult->pOCRText[ind].points[0].y)<((sY3-sY2)/2)){
-                        ConS.append(number);
-                        con_number=true;
-                        if(ConS.size()>=10){
-                            break;
+                else if(number.size()>=4 && Iso.isEmpty() && !number.endsWith("S")){
+                    if((ISODICT.indexOf(number.mid(0,4))!=-1 || !ISOMAP.value(number.mid(0,4),"").isEmpty())){
+                        if(!ISOMAP.value(number.mid(0,4),"").isEmpty() ){
+                            Iso=ISOMAP.value(number.mid(0,4));
+                        }
+                        else {
+                            Iso=number.mid(0,4);
+                        }
+                        if(!Iso.isEmpty()){
+                            Iso_=number;
+                            /*****************************
+                            * @brief:置信度
+                            ******************************/
+                            ISO_source=ocrResult->pOCRText[ind].score;
+                            //break;
                         }
                     }
                 }
             }
-            if(!con_number){
+
+
+            if(!ConS.isEmpty() && !con_number){
                 for (int ind = 0; ind < cout; ind++)
                 {
-                    /*****************************
-                    * @brief:水平箱号，（多行）
-                    * WDFU
-                    * 123456 7
-                    ******************************/
-                    QString number= QString::fromStdWString(reinterpret_cast<WCHAR*>(ocrResult->pOCRText[ind].ptext));
-                    if(number==Iso_){
+                    if((ocrResult->pOCRText[ind].points[3].y-ocrResult->pOCRText[ind].points[0].y)<(sY4-sY1)/2){
                         continue;
                     }
 
-                    if(ConS != number){
-                        if(qAbs(sX4-ocrResult->pOCRText[ind].points[0].x)<((sX3-sX4)/2) && qAbs(sY4-ocrResult->pOCRText[ind].points[0].y)<(sY4-sY1)){
-                            ConS.append(number);
-
-                            if(ConS.size()>=10){
-                                con_number=true;
-                                break;
-                            }
-                            else {
-                                sX1=ocrResult->pOCRText[ind].points[0].x;
-                                sY1=ocrResult->pOCRText[ind].points[0].y;
-                                sX2=ocrResult->pOCRText[ind].points[1].x;
-                                sY2=ocrResult->pOCRText[ind].points[1].y;
-                                sX3=ocrResult->pOCRText[ind].points[2].x;
-                                sY3=ocrResult->pOCRText[ind].points[2].y;
-                                sX4=ocrResult->pOCRText[ind].points[3].x;
-                                sY4=ocrResult->pOCRText[ind].points[3].y;
-                            }
-                        }
-                    }
-                }
-            }
-            if(!con_number){
-                for (int ind = 0; ind < cout; ind++)
-                {
                     /*****************************
-                    * @brief:水平箱号，（多行）
-                    * WDFU
-                    * 123     456 7
-                    *-----------------------------
-                    * WDFU
-                    * 123
-                    * 1234
+                    * @brief:水平箱号，（单行）
+                    * WDFU 123456 7
                     ******************************/
                     QString number= QString::fromStdWString(reinterpret_cast<WCHAR*>(ocrResult->pOCRText[ind].ptext));
                     if(number==Iso_){
@@ -410,60 +351,179 @@ void Identify::slotDetectImage(const QString &image)
                         }
                     }
                 }
+                if(!con_number){
+                    for (int ind = 0; ind < cout; ind++)
+                    {
+                        /*****************************
+                        * @brief:水平箱号，（多行）
+                        * WDFU
+                        * 123456 7
+                        ******************************/
+                        QString number= QString::fromStdWString(reinterpret_cast<WCHAR*>(ocrResult->pOCRText[ind].ptext));
+                        if(number==Iso_){
+                            continue;
+                        }
+
+                        if(ConS != number){
+                            if(qAbs(sX4-ocrResult->pOCRText[ind].points[0].x)<((sX3-sX4)/2) && qAbs(sY4-ocrResult->pOCRText[ind].points[0].y)<(sY4-sY1)){
+                                ConS.append(number);
+
+                                if(ConS.size()>=10){
+                                    con_number=true;
+                                    break;
+                                }
+                                else {
+                                    sX1=ocrResult->pOCRText[ind].points[0].x;
+                                    sY1=ocrResult->pOCRText[ind].points[0].y;
+                                    sX2=ocrResult->pOCRText[ind].points[1].x;
+                                    sY2=ocrResult->pOCRText[ind].points[1].y;
+                                    sX3=ocrResult->pOCRText[ind].points[2].x;
+                                    sY3=ocrResult->pOCRText[ind].points[2].y;
+                                    sX4=ocrResult->pOCRText[ind].points[3].x;
+                                    sY4=ocrResult->pOCRText[ind].points[3].y;
+                                }
+                            }
+                        }
+                    }
+                }
+                if(!con_number){
+                    for (int ind = 0; ind < cout; ind++)
+                    {
+                        /*****************************
+                        * @brief:水平箱号，（多行）
+                        * WDFU
+                        * 123     456 7
+                        *-----------------------------
+                        * WDFU
+                        * 123
+                        * 1234
+                        ******************************/
+                        QString number= QString::fromStdWString(reinterpret_cast<WCHAR*>(ocrResult->pOCRText[ind].ptext));
+                        if(number==Iso_){
+                            continue;
+                        }
+
+                        if(ConS != number){
+                            if(qAbs(sX2-ocrResult->pOCRText[ind].points[0].x)<(sX2-sX1) && qAbs(sY2-ocrResult->pOCRText[ind].points[0].y)<((sY3-sY2)/2)){
+                                ConS.append(number);
+                                con_number=true;
+                                if(ConS.size()>=10){
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
             }
-        }
 
-        ConS.remove(QRegExp("\\s"));
-        ConS.remove(QRegExp("\\."));
+            ConS.remove(QRegExp("\\s"));
+            ConS.remove(QRegExp("\\."));
 
-        QString container="";
-        for(int i=0;i<ConS.size();i++){
-            if(i<4 && ConS.at(i)>='A' && ConS.at(i)<='Z'){
-                container.append(ConS.at(i));
+            QString container="";
+            for(int i=0;i<ConS.size();i++){
+                if(i<4 && ConS.at(i)>='A' && ConS.at(i)<='Z'){
+                    container.append(ConS.at(i));
+                }
+                if(i>=4 && ConS.at(i)>='0' && ConS.at(i)<='9'){
+                    container.append(ConS.at(i));
+                }
+    //            if((ConS.at(i)>='0' && ConS.at(i)<='9') || (ConS.at(i)>='A' && ConS.at(i)<='Z')){
+    //                container.append(ConS.at(i));
+    //            }
             }
-            if(i>=4 && ConS.at(i)>='0' && ConS.at(i)<='9'){
-                container.append(ConS.at(i));
+
+            uint64_t source=4000000;
+            if(Iso.isEmpty()){
+                source=0;
             }
-//            if((ConS.at(i)>='0' && ConS.at(i)<='9') || (ConS.at(i)>='A' && ConS.at(i)<='Z')){
-//                container.append(ConS.at(i));
-//            }
-        }
 
-        uint64_t source=4000000;
-        if(Iso.isEmpty()){
-            source=0;
-        }
+            uint64_t sourceC=11000000;
+            if(container.size()>=12 || container.size()<=9){
+                sourceC=CON_source*10000000;
+            }
 
-        uint64_t sourceC=11000000;
-        if(container.size()>=12 || container.size()<=9){
-            sourceC=CON_source*10000000;
-        }
+            if(container.size()>11){
+                container=ConS.mid(0,11);
+                emit signalDetectRst(image,QString("RESULT:%1|%2|%3|%4").arg(numberCheck(container),Iso,QString::number(sourceC,10),QString::number(source,10)));
 
-        if(container.size()>11){
-            container=ConS.mid(0,11);
-            emit signalDetectRst(image,QString("RESULT:%1|%2|%3|%4").arg(numberCheck(container),Iso,QString::number(sourceC,10),QString::number(source,10)));
+            }
+            else if(container.size()>=10){
+                emit signalDetectRst(image,QString("RESULT:%1|%2|%3|%4").arg(numberCheck(container),Iso,QString::number(sourceC,10),QString::number(source,10)));
 
-        }
-        else if(container.size()>=10){
-            emit signalDetectRst(image,QString("RESULT:%1|%2|%3|%4").arg(numberCheck(container),Iso,QString::number(sourceC,10),QString::number(source,10)));
+            }
+            else {
+                emit signalDetectRst(image,QString("RESULT:%1|%2|%3|%4").arg(container,Iso,QString::number(sourceC,10),QString::number(source,10)));
+            }
 
+            /*****************************
+            * @brief:释放识别结果对象
+            ******************************/
+            FreeDetectResult(ocrResult);
         }
         else {
-            emit signalDetectRst(image,QString("RESULT:%1|%2|%3|%4").arg(container,Iso,QString::number(sourceC,10),QString::number(source,10)));
+            qWarning().noquote()<<QString("File does not exist, identification failed!");
+            emit signalDetectRst(image,"RESULT:||0|0");
+        }
+    }
+    else{
+        QFileInfo info(image);
+        if(info.isFile()){
+
+            OCRResult* ocrResult=new OCRResult() ;
+            int cout= Detect(pEngine, const_cast<char*>(image.toStdString().c_str()), &ocrResult);
+
+            for (int ind = 0; ind < cout; ind++)
+            {
+                bool isTru=true;
+                QString number= QString::fromStdWString(reinterpret_cast<WCHAR*>(ocrResult->pOCRText[ind].ptext));
+                if(number.size()==3){
+                    for(int i=0;i<number.size();i++){
+                        if(number.at(i)>'9'){
+                            isTru=false;
+                        }
+                    }
+                }
+                else {
+                    continue;
+                }
+
+                if(!isTru){
+                    continue;
+                }
+
+                QString point=QString("(%1,%2)(%3,%4)(%5,%6)(%7,%8)").arg(
+                            QString::number(ocrResult->pOCRText[ind].points[0].x),
+                            QString::number(ocrResult->pOCRText[ind].points[0].y),
+                            QString::number(ocrResult->pOCRText[ind].points[1].x),
+                            QString::number(ocrResult->pOCRText[ind].points[1].y),
+                            QString::number(ocrResult->pOCRText[ind].points[2].x),
+                            QString::number(ocrResult->pOCRText[ind].points[2].y),
+                            QString::number(ocrResult->pOCRText[ind].points[3].x),
+                            QString::number(ocrResult->pOCRText[ind].points[3].y));
+                QString rst=QString("RESULT:%1|%2|%3").arg(number,QString::number(ocrResult->pOCRText[ind].score),point);
+
+                emit signalDetectRst(image,rst);
+
+                return;
+            }
+
+            /*****************************
+            * @brief:释放识别结果对象
+            ******************************/
+            FreeDetectResult(ocrResult);
+        }
+        else {
+            qWarning().noquote()<<QString("File does not exist, identification failed!");
         }
 
-        /*****************************
-        * @brief:释放识别结果对象
-        ******************************/
-        FreeDetectResult(ocrResult);
-    }
-    else {
-        qWarning().noquote()<<QString("File does not exist, identification failed!");
-        emit signalDetectRst(image,"RESULT:||0|0");
+        emit signalDetectRst(image,QString("RESULT:||"));
     }
 }
 
-
+void Identify::setDectModelSlot(int model)
+{
+    this->model=model;
+}
 
 int Identify::computeQuadraticPower(int variable)
 {

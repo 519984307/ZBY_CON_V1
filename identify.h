@@ -71,6 +71,12 @@ public slots:
     ///
     void slotDetectImage(const QString& image);
 
+    ///
+    /// \brief setDectModelSlot 设置识别模式
+    /// \param model
+    ///
+    void setDectModelSlot(int model);
+
 signals:
 
     ///
@@ -158,5 +164,10 @@ protected:
     /// \brief checkMap 校验列表
     ///
     QMap<QChar,int> checkMap;
+
+    ///
+    /// \brief model 识别模式
+    ///
+    int model;
 };
 #endif // IDENTIFY_H

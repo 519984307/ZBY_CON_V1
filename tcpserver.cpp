@@ -7,6 +7,7 @@ TcpServer::TcpServer(QObject *parent):QTcpServer (parent)
 
     IDE=new Identify ();
     connect(this,&TcpServer::detectImageSignal,IDE,&Identify::slotDetectImage);
+    connect(this,&TcpServer::setDectModelSignal,IDE,&Identify::setDectModelSlot);
     connect(IDE,&Identify::signalDetectRst,this,&TcpServer::detectRstSlot);
 }
 
@@ -38,6 +39,7 @@ void TcpServer::incomingConnection(qintptr socketID)
     connect(pClient,&TcpClient::setClientImageSignal,this,&TcpServer::setClientImageSlot);
     connect(pClient,&QIODevice::readyRead,pClient,&TcpClient::receiveDataSlot);
     connect(pClient,&TcpClient::disconnected,this,&TcpServer::disconnectedSlot);
+    connect(pClient,&TcpClient::setDectModelSignal,this,&TcpServer::setDectModelSignal);
 
     qInfo().noquote()<<QString("[%1] %2-%3:A new client is added").arg(this->metaObject()->className(),pClient->peerAddress().toString(),QString::number(pClient->peerPort()));
 }

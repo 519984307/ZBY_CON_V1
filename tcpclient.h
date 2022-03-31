@@ -28,6 +28,12 @@ signals:
     /// \param socketId
     ///
     void setClientImageSignal(const QString& img,qintptr socketId);
+
+    ///
+    /// \brief setDectModelSignal 设置
+    /// \param model
+    ///
+    void setDectModelSignal(int model);
 };
 
 #endif // TCPCLIENT_H
